@@ -10,6 +10,7 @@
         "insights"
     ],
     "homepage": "https://github.com/iutrace/laravel-dashboard",
+    "license": "MIT",
     "autoload": {
         "psr-4": {
             "Iutrace\\Dashboard\\": "src/"
@@ -19,6 +20,10 @@
         {
             "name": "Facundo Lezcano",
             "email": "flezcano@iupik.com"
+        },
+        {
+            "name": "Lucas Correa",
+            "email": "lcorrea@iupik.com"
         }
     ],
     "require": {

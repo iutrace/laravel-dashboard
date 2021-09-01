@@ -1,6 +1,5 @@
 <?php
 
-
 namespace Iutrace\Dashboard;
 
 use Illuminate\Support\Facades\App;

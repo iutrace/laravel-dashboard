@@ -1,8 +1,6 @@
 <?php
 
-
 namespace Iutrace\Dashboard;
-
 
 use Illuminate\Contracts\Validation\Rule;
 use Illuminate\Http\Request;

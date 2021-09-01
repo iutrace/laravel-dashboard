@@ -1,8 +1,6 @@
 <?php
 
-
 namespace Iutrace\Dashboard;
-
 
 use Illuminate\Database\Query\Builder;
 

@@ -1,6 +1,7 @@
 {
     "name": "iutrace/laravel-dashboard",
     "description": "Dashboard service",
+    "type": "library",
     "keywords": [
         "iutrace",
         "laravel",
@@ -11,11 +12,6 @@
     ],
     "homepage": "https://github.com/iutrace/laravel-dashboard",
     "license": "MIT",
-    "autoload": {
-        "psr-4": {
-            "Iutrace\\Dashboard\\": "src/"
-        }
-    },
     "authors": [
         {
             "name": "Facundo Lezcano",
@@ -35,6 +31,19 @@
     },
     "require-dev": {
         "phpunit/phpunit": "^8.0|^9.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Iutrace\\Dashboard\\": "src/"
+        },
+        "exclude-from-classmap": [
+            "/tests/"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
     },
     "extra": {
         "laravel": {

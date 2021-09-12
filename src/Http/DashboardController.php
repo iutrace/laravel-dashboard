@@ -1,18 +1,20 @@
 <?php
 
-namespace Iutrace\Dashboard;
+namespace Iutrace\Dashboard\Http;
 
-use Illuminate\Contracts\Validation\Rule;
+use Illuminate\Validation\Rule;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Iutrace\Dashboard\Dashboard;
 
 class DashboardController extends Controller
 {
-    public function data(Request $request, DashboardServiceProvider $dashboardProvider){
+    public function data(Request $request, Dashboard $dashboard)
+    {
         $data = $request->validate([
             'metric' => [
                 'required',
-                Rule::in($dashboardProvider->metrics)
+                Rule::in($dashboard->getMetrics())
             ],
         ]);
     }

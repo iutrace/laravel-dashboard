@@ -17,5 +17,19 @@ class DashboardController extends Controller
                 Rule::in($dashboard->getMetrics())
             ],
         ]);
+        
+        $metric = $request->get('metric');
+
+        $company = \Auth::user()->company;
+
+        if ($request->has('period')) {
+            $data = $this->$function($request->period);
+        } else {
+            $data = $this->$function($request->get('from'), $request->get('to'), $company, $request->has('insurance_company_id') ? $request->insurance_company_id : null);
+        }
+
+        if ($request->has('json')) {
+            return $data;
+        }
     }
 }

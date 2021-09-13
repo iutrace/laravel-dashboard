@@ -1,34 +1,33 @@
 <?php
-
+declare(strict_types=1);
 
 namespace Iutrace\Dashboard;
 
-use Illuminate\Support\Facades\App;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
-use SplFileInfo;
+use Iutrace\Dashboard\Http\DashboardController;
 
 class DashboardServiceProvider extends ServiceProvider
 {
-    public $metricsPath;
-
-    public $metrics = [];
-
-    public function boot(){
+    public function boot()
+    {
         $this->registerRoutes();
 
-        $this->metricsPath = App::basePath('Metrics');
-
-        /* @var $file SplFileInfo */
-        foreach (new RecursiveIteratorIterator (new RecursiveDirectoryIterator ($this->metricsPath)) as $file)
-        {
-            $this->metrics[] = $file->getPathname();
+        if ($this->app->runningInConsole()) {
+            $this->publishes([
+                __DIR__.'/../config/dashboard.php' => config_path('dashboard.php'),
+            ]);
         }
     }
 
-    protected function registerRoutes(){
-        Route::get('dashboard/data', [DashboardController::class, 'data']);
+    public function register()
+    {
+        $this->mergeConfigFrom(__DIR__.'/../config/dashboard.php', 'dashboard');
+        $this->app->singleton(Dashboard::class);
+    }
+
+    protected function registerRoutes()
+    {
+        if (function_exists('env') && env('REGISTER_WORKER_ROUTES', true))
+            $this->app['router']->get('dashboard/data', [DashboardController::class, 'data'])->middleware('auth');
     }
 }

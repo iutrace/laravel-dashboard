@@ -1,5 +1,5 @@
 <?php
 
 return [
-    'metrics_path' => app_path('Metrics'),
+    'metrics_namespace' => 'App\Metrics',
 ];

@@ -2,7 +2,14 @@
 
 ### Installation
 1. `composer require iutrace/laravel-dashboard`
-3. Publish the config file by running `php artisan vendor:publish --provider="Iutrace\Dashboard\DashboardServiceProvider"`. The config file will indicate the directory where the metrics are located.
+ 
+
+3. Publish the config file by running `php artisan vendor:publish --provider="Iutrace\Dashboard\DashboardServiceProvider"`. 
+The config file will indicate the directory where the metrics are located.
+
+
+4. Optional, you should call the Dashboard::routes method within the boot method of your App\Providers\AuthServiceProvider.
+This method will register the routes necessary to get the metrics data
 
 ### Testing
 

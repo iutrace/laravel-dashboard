@@ -7,31 +7,35 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
-use RegexIterator;
-use SplFileInfo;
+use Illuminate\Support\Facades\Route;
+use Iutrace\Dashboard\Http\DashboardController;
+use Laravel\Passport\RouteRegistrar;
 
 class Dashboard
 {
     public function getMetrics(): array
     {
-        $metricsPath = config('dashboard.metrics_path');
+        $namespace = config('dashboard.metrics_namespace');
+        $namespace .= '\\';
 
-        if (!file_exists($metricsPath))
-            return [];
+        return array_filter(get_declared_classes(), function($item) use ($namespace) {
+            return substr($item, 0, strlen($namespace)) === $namespace;
+        });
+    }
 
-        $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator ($metricsPath));
-        $metrics = [];
+    public static function routes(): void
+    {
+        $options = [
+            'namespace' => '\Iutrace\Dashboard\Http',
+            'middleware' => ['web', 'auth']
+        ];
 
-        /* @var $file SplFileInfo */
-        foreach (new RegexIterator($files, '/\.php$/') as $file)
-        {
-            $metrics[] = (string) Str::of(substr($file->getFilename(), 0, -4))->snake();
-        }
-
-        return $metrics;
+        Route::group($options, function ($router) {
+            $router->get('/dashboard/data', [
+                'uses' => 'DashboardController@data',
+                'as' => 'iutrace.dashboard.data',
+            ]);
+        });
     }
 
     /** Fills missing dates from the given result
@@ -193,13 +197,5 @@ class Dashboard
         }
 
         return $data;
-    }
-
-    public static function getOwnershipCondition($query): String
-    {
-        $wheres = collect($query->wheres);
-        $where = $wheres->where('operator', '=')->first();
-
-        return $where['column'] . ' = ' . $where['value'];
     }
 }

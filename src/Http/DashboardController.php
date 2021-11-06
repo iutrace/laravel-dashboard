@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace Iutrace\Dashboard\Http;
 
@@ -6,30 +7,37 @@ use Illuminate\Validation\Rule;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Iutrace\Dashboard\Dashboard;
+use Iutrace\Dashboard\Models\Metric;
 
 class DashboardController extends Controller
 {
+    /**
+     * Returns the metric data.
+     *
+     * @param Illuminate\Http\Request $request
+     * @return Iutrace\Dashboard\Models\Metric
+     */
     public function data(Request $request, Dashboard $dashboard)
     {
-        $data = $request->validate([
+        $request->validate([
             'metric' => [
                 'required',
                 Rule::in($dashboard->getMetrics())
             ],
         ]);
-        
-        $metric = $request->get('metric');
 
-        $company = \Auth::user()->company;
+        $period = $request->period ?? 'monthly';
+        $toDate = today()->copy()->endOfDay();
+        $fromDate = Dashboard::calculateFromDate($toDate, $period);
 
-        if ($request->has('period')) {
-            $data = $this->$function($request->period);
-        } else {
-            $data = $this->$function($request->get('from'), $request->get('to'), $company, $request->has('insurance_company_id') ? $request->insurance_company_id : null);
-        }
+        /** @var Metric $metric */
+        $metric = new $request->metric($request, $fromDate, $toDate, $period);
+        $data = $metric->query();
 
-        if ($request->has('json')) {
-            return $data;
-        }
+        $labelMap = [
+            'value' => $metric::name(),
+        ];
+
+        return Dashboard::generateChartData($data, $labelMap, $fromDate, $toDate, null, $period);
     }
 }

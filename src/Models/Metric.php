@@ -31,13 +31,10 @@ abstract class Metric
 
     public abstract function query(): Builder;
 
-    public static function name(): string
-    {
-        return '';
-    }
+    public abstract function name(): string;
 
-    public function dateField(): string
+    public function dateField(): ?string
     {
-        return 'created_at';
+        return null;
     }
 }

@@ -35,9 +35,9 @@ class DashboardController extends Controller
         $data = $metric->query();
 
         $labelMap = [
-            'value' => $metric::name(),
+            'value' => $metric->name(),
         ];
 
-        return Dashboard::generateChartData($data, $labelMap, $fromDate, $toDate, null, $period);
+        return Dashboard::generateChartData($data, $labelMap, $fromDate, $toDate, $metric->dateField(), $period);
     }
 }

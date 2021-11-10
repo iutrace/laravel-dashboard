@@ -1,10 +1,10 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Iutrace\Dashboard;
 
 use Illuminate\Support\ServiceProvider;
-use Iutrace\Dashboard\Http\DashboardController;
 
 class DashboardServiceProvider extends ServiceProvider
 {
@@ -21,5 +21,9 @@ class DashboardServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(__DIR__.'/../config/dashboard.php', 'dashboard');
         $this->app->singleton(Dashboard::class);
+
+        if (env('REGISTER_DASHBOARD_ROUTES', true)) {
+            Dashboard::routes();
+        }
     }
 }

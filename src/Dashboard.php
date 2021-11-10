@@ -1,15 +1,18 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Iutrace\Dashboard;
 
 use Carbon\Carbon;
+use Exception;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
-use Iutrace\Dashboard\Http\DashboardController;
-use Laravel\Passport\RouteRegistrar;
+use stdClass;
 
 class Dashboard
 {
@@ -18,7 +21,7 @@ class Dashboard
         $namespace = config('dashboard.metrics_namespace');
         $namespace .= '\\';
 
-        return array_filter(get_declared_classes(), function($item) use ($namespace) {
+        return array_filter(get_declared_classes(), function ($item) use ($namespace) {
             return substr($item, 0, strlen($namespace)) === $namespace;
         });
     }
@@ -27,7 +30,7 @@ class Dashboard
     {
         $options = [
             'namespace' => '\Iutrace\Dashboard\Http',
-            'middleware' => ['web', 'auth']
+            'middleware' => ['web', 'auth'],
         ];
 
         Route::group($options, function ($router) {
@@ -40,13 +43,14 @@ class Dashboard
 
     /** Fills missing dates from the given result
      * @param Collection $data Input results data
-     * @param array $fields Fields that data has
-     * @param Carbon $currentDate
+     * @param array $labelMap
+     * @param Carbon $fromDate
      * @param Carbon $toDate
      * @param String|null $period Period of date "jumps"
+     * @param String $dateField
      * @return Collection
      */
-    public static function fillDateGaps($data, array $labelMap, Carbon $fromDate, Carbon $toDate, String $period = null, String $dateField = 'date'): Collection
+    public static function fillDateGaps(Collection $data, array $labelMap, Carbon $fromDate, Carbon $toDate, String $period = null, String $dateField = 'date'): Collection
     {
         $currentDate = clone $fromDate;
         switch ($period) {
@@ -54,16 +58,19 @@ class Dashboard
                 $period = 'days';
                 $format = 'Y-m-d';
                 $outputFormat = 'd/m/Y';
+
                 break;
             case 'weekly':
                 $period = 'weeks';
                 $format = 'W';
                 $outputFormat = 'd/m/Y';
+
                 break;
             default:
                 $period = 'months';
                 $format = 'Y-m';
                 $outputFormat = 'm/Y';
+
                 break;
         }
 
@@ -73,7 +80,7 @@ class Dashboard
             $item = $data->firstWhere($dateField, $currentDate->format($format));
 
             if ($item == null) {
-                $item = new \stdClass();
+                $item = new stdClass();
                 foreach ($labelMap as $field => $name) {
                     $item->$field = 0.0;
                 }
@@ -99,16 +106,19 @@ class Dashboard
             case 'daily':
                 $dateFormat = '\'%Y-%m-%d\'';
                 $groupBy = 'YEAR(' . $dateField . '),MONTH(' . $dateField . '),DAY(' . $dateField . ')';
+
                 break;
 
             case 'weekly':
                 $dateFormat = '\'%v\'';
                 $groupBy = 'DATE_FORMAT(' . $dateField . ', ' . $dateFormat . ')';
+
                 break;
 
             default:
                 $dateFormat = '\'%Y-%m\'';
                 $groupBy = 'YEAR(' . $dateField . '),MONTH(' . $dateField . ')';
+
                 break;
         }
 
@@ -146,56 +156,95 @@ class Dashboard
         switch ($period) {
             case 'daily':
                 $fromDate = $toDate->copy()->subtract(12, 'days')->startOfDay();
+
                 break;
 
             case 'weekly':
                 $fromDate = $toDate->copy()->subtract(12, 'weeks')->startOfWeek();
+
                 break;
 
             default:
                 $fromDate = $toDate->copy()->subtract(12, 'months')->startOfMonth();
+
                 break;
         }
 
         return $fromDate;
     }
 
+    public static function formatData(Collection $data, Carbon $fromDate, Carbon $toDate, String $period = null, $defaultValue): array
+    {
+        $currentDate = clone $fromDate;
+        switch ($period) {
+            case 'daily':
+                $period = 'days';
+                $format = 'Y-m-d';
+                $outputFormat = 'd/m/Y';
+
+                break;
+            case 'weekly':
+                $period = 'weeks';
+                $format = 'W';
+                $outputFormat = 'd/m/Y';
+
+                break;
+            default:
+                $period = 'months';
+                $format = 'Y-m';
+                $outputFormat = 'm/Y';
+
+                break;
+        }
+
+        $output = [];
+
+        while ($currentDate <= $toDate) {
+            $item = $data->firstWhere('date', $currentDate->format($format));
+
+            $output[$currentDate->format($outputFormat)] = floatval(optional($item)->value ?? $defaultValue);
+            $currentDate = $currentDate->add(1, $period);
+        }
+
+        return $output;
+    }
+
     /** Generates data for charts
-     * @param mixed $query
-     * @param array $labelMap Map of key->name entries, being key the field in query and name the label at the chart
+     * @param Metric $metric
+     * @param Request $request
      * @param Carbon $fromDate
      * @param Carbon $toDate
-     * @param String|null $dateField Name of the date field at query
      * @param String|null $period
      * @return array
+     * @throws Exception
      */
-    public static function generateChartData($query, array $labelMap, Carbon $fromDate, Carbon $toDate, String $dateField = null, String $period = null): array
+    public static function generateChartData(Metric $metric, Request $request, Carbon $fromDate, Carbon $toDate, String $period = null): array
     {
+        $query = $metric->query($request);
+        $dateField = $metric->dateField();
+
         if (is_subclass_of($query, Relation::class)) {
             $query = $query->getQuery();
         }
 
-        if (is_subclass_of($query, \Illuminate\Database\Eloquent\Builder::class)) {
+        if (is_subclass_of($query, Builder::class)) {
             $query = $query->applyScopes()->getQuery();
         }
 
         if (get_class($query) != \Illuminate\Database\Query\Builder::class && ! is_subclass_of($query, \Illuminate\Database\Query\Builder::class)) {
-            throw new \Exception('Unexpected class ' . get_class($query));
+            throw new Exception('Unexpected class ' . get_class($query));
         }
+
+        if (empty($query->columns) || isset($query->columns[1])) {
+            throw new Exception('Query must return one value named \'value\'');
+        }
+
+        /* TODO: check if select is aliased value */
 
         if ($dateField != null) {
             self::addDateToQuery($query, $dateField, 'date', $period);
         }
 
-        $rawData = self::fillDateGaps($query->get(), $labelMap, $fromDate, $toDate, $period);
-
-        $data['labels'] = $rawData->pluck('date');
-        $data['datasets'] = [];
-
-        foreach ($labelMap as $key => $name) {
-            $data['datasets'][$name] = $rawData->pluck($key);
-        }
-
-        return $data;
+        return self::formatData($query->get(), $fromDate, $toDate, $period, $metric->defaultValue());
     }
 }

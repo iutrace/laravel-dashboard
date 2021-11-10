@@ -1,43 +1,57 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Iutrace\Dashboard\Http;
 
-use Illuminate\Validation\Rule;
+use Carbon\Carbon;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Validation\Rule;
 use Iutrace\Dashboard\Dashboard;
-use Iutrace\Dashboard\Models\Metric;
+use Iutrace\Dashboard\Metric;
 
 class DashboardController extends Controller
 {
     /**
      * Returns the metric data.
      *
-     * @param Illuminate\Http\Request $request
-     * @return Iutrace\Dashboard\Models\Metric
+     * @param Request $request
+     * @param Dashboard $dashboard
+     * @return array
+     * @throws Exception
      */
-    public function data(Request $request, Dashboard $dashboard)
+    public function data(Request $request, Dashboard $dashboard): array
     {
-        $request->validate([
+        $data = $request->validate([
             'metric' => [
                 'required',
-                Rule::in($dashboard->getMetrics())
+                Rule::in($dashboard->getMetrics()),
             ],
+            'period' => '',
+            'from' => '',
+            'to' => '',
         ]);
+        $period = $data['period'] ?? 'monthly';
 
-        $period = $request->period ?? 'monthly';
-        $toDate = today()->copy()->endOfDay();
-        $fromDate = Dashboard::calculateFromDate($toDate, $period);
+        $toDate = isset($data['to']) ? Carbon::parse($data['to']) : Carbon::today()->copy()->endOfDay();
+        $fromDate = isset($data['from']) ? Carbon::parse($data['from']) : Dashboard::calculateFromDate($toDate, $period);
 
         /** @var Metric $metric */
-        $metric = new $request->metric($request, $fromDate, $toDate, $period);
-        $data = $metric->query();
+        $metric = new $data['metric']();
 
-        $labelMap = [
-            'value' => $metric->name(),
-        ];
+        $data = Dashboard::generateChartData($metric, $request, $fromDate, $toDate, $period);
 
-        return Dashboard::generateChartData($data, $labelMap, $fromDate, $toDate, $metric->dateField(), $period);
+        $output = $metric->toArray();
+        $output['data'] = $data;
+
+        if (config('app.debug') === true) {
+            $query = $metric->query($request);
+            Dashboard::addDateToQuery($query, $metric->dateField(), 'date', $period);
+            $output['sql'] = $query->toSql();
+        }
+
+        return $output;
     }
 }

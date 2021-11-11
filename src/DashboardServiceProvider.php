@@ -22,7 +22,7 @@ class DashboardServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../config/dashboard.php', 'dashboard');
         $this->app->singleton(Dashboard::class);
 
-        if (env('REGISTER_DASHBOARD_ROUTES', true)) {
+        if (config('dashboard.register_routes')) {
             Dashboard::routes();
         }
     }

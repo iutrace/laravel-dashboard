@@ -148,7 +148,9 @@ class Dashboard
         while ($currentDate <= $toDate) {
             $item = $data->firstWhere('date', $currentDate->format($format));
 
-            $output[$currentDate->format($outputFormat)] = floatval(optional($item)->value ?? $defaultValue);
+            $value = optional($item)->value;
+
+            $output[$currentDate->format($outputFormat)] = $value ? floatval($value) : $defaultValue;
             $currentDate = $currentDate->add(1, $period);
         }
 

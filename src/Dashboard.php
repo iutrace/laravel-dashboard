@@ -41,60 +41,6 @@ class Dashboard
         });
     }
 
-    /** Fills missing dates from the given result
-     * @param Collection $data Input results data
-     * @param array $labelMap
-     * @param Carbon $fromDate
-     * @param Carbon $toDate
-     * @param String|null $period Period of date "jumps"
-     * @param String $dateField
-     * @return Collection
-     */
-    public static function fillDateGaps(Collection $data, array $labelMap, Carbon $fromDate, Carbon $toDate, String $period = null, String $dateField = 'date'): Collection
-    {
-        $currentDate = clone $fromDate;
-        switch ($period) {
-            case 'daily':
-                $period = 'days';
-                $format = 'Y-m-d';
-                $outputFormat = 'd/m/Y';
-
-                break;
-            case 'weekly':
-                $period = 'weeks';
-                $format = 'W';
-                $outputFormat = 'd/m/Y';
-
-                break;
-            default:
-                $period = 'months';
-                $format = 'Y-m';
-                $outputFormat = 'm/Y';
-
-                break;
-        }
-
-        $output = collect();
-
-        while ($currentDate <= $toDate) {
-            $item = $data->firstWhere($dateField, $currentDate->format($format));
-
-            if ($item == null) {
-                $item = new stdClass();
-                foreach ($labelMap as $field => $name) {
-                    $item->$field = 0.0;
-                }
-            }
-
-            $item->$dateField = $currentDate->format($outputFormat);
-
-            $output->push($item);
-            $currentDate = $currentDate->add(1, $period);
-        }
-
-        return $output;
-    }
-
     /** Get date field properties for query group and select
      * @param String $dateField
      * @param String|null $period

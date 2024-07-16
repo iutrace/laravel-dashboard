@@ -131,7 +131,7 @@ class Dashboard
                 break;
             case 'weekly':
                 $period = 'weeks';
-                $format = 'W';
+                $format = 'Y-W';
                 $outputFormat = 'd/m/Y';
 
                 break;

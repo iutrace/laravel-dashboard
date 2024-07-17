@@ -57,7 +57,7 @@ class Dashboard
 
             case 'weekly':
                 $dateFormat = '\'%Y-%v\'';
-                $groupBy = 'DATE_FORMAT(' . $dateField . ', "%Y-%v")';
+                $groupBy = 'DATE_FORMAT(' . $dateField . ', ' . $dateFormat . ')';
 
                 break;
 

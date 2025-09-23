@@ -41,12 +41,8 @@ class Dashboard
         });
     }
 
-    /** Get date field properties for query group and select
-     * @param String $dateField
-     * @param String|null $period
-     * @return string[]
-     */
-    public static function getDateFieldProperties(String $dateField, String $period = null): array
+    /** Get date field properties for query group and select */
+    public static function getDateFieldProperties(string $dateField, ?string $period = null): array
     {
         switch ($period) {
             case 'daily':
@@ -78,13 +74,13 @@ class Dashboard
     /** Adds date select and group to the query
      *
      * @param mixed $query The query to be modified
-     * @param String $dateField The name of the field in the sql query
-     * @param String|null $outputField Name of the alias of the field
-     * @param String|null $period The period of the data, daily, weekly or monthly
+     * @param string $dateField The name of the field in the sql query
+     * @param string|null $outputField Name of the alias of the field
+     * @param string|null $period The period of the data, daily, weekly or monthly
      *
      * @return void
      */
-    public static function addDateToQuery($query, String $dateField, String $outputField = null, String $period = null)
+    public static function addDateToQuery($query, string $dateField, ?string $outputField = null, ?string $period = null): void
     {
         $properties = self::getDateFieldProperties($dateField, $period);
 
@@ -94,10 +90,10 @@ class Dashboard
 
     /** Calculates from date with the given period to reach the target date
      * @param Carbon $toDate
-     * @param String|null $period
+     * @param string|null $period
      * @return Carbon
      */
-    public static function calculateFromDate(Carbon $toDate, String $period = null): Carbon
+    public static function calculateFromDate(Carbon $toDate, ?string $period = null): Carbon
     {
         switch ($period) {
             case 'daily':
@@ -119,7 +115,7 @@ class Dashboard
         return $fromDate;
     }
 
-    public static function formatData(Collection $data, Carbon $fromDate, Carbon $toDate, String $period = null, $defaultValue): array
+    public static function formatData(Collection $data, Carbon $fromDate, Carbon $toDate, ?string $period = null, mixed $defaultValue = null): array
     {
         $currentDate = clone $fromDate;
         switch ($period) {
@@ -148,7 +144,7 @@ class Dashboard
         while ($currentDate <= $toDate) {
             $item = $data->firstWhere('date', $currentDate->format($format));
 
-            $value = optional($item)->value;
+            $value = $item?->value;
 
             $output[$currentDate->format($outputFormat)] = $value ? floatval($value) : $defaultValue;
             $currentDate = $currentDate->add(1, $period);
@@ -162,11 +158,11 @@ class Dashboard
      * @param Request $request
      * @param Carbon $fromDate
      * @param Carbon $toDate
-     * @param String|null $period
+     * @param string|null $period
      * @return array
      * @throws Exception
      */
-    public static function generateChartData(Metric $metric, Request $request, Carbon $fromDate, Carbon $toDate, String $period = null): array
+    public static function generateChartData(Metric $metric, Request $request, Carbon $fromDate, Carbon $toDate, ?string $period = null): array
     {
         $query = $metric->query($request);
         $dateField = $metric->dateField();

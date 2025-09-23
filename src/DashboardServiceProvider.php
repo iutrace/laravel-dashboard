@@ -8,16 +8,16 @@ use Illuminate\Support\ServiceProvider;
 
 class DashboardServiceProvider extends ServiceProvider
 {
-    public function boot()
+    public function boot(): void
     {
         if ($this->app->runningInConsole()) {
             $this->publishes([
                 __DIR__.'/../config/dashboard.php' => config_path('dashboard.php'),
-            ]);
+            ], 'dashboard-config');
         }
     }
 
-    public function register()
+    public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/dashboard.php', 'dashboard');
         $this->app->singleton(Dashboard::class);

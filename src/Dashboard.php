@@ -88,6 +88,20 @@ class Dashboard
         $query->groupBy(DB::raw($properties['groupBy']));
     }
 
+    /**
+     * Widens the range to whole periods so the first and last buckets are not cut.
+     *
+     * @return array{0: Carbon, 1: Carbon}
+     */
+    public static function periodBounds(Carbon $fromDate, Carbon $toDate, ?string $period = null): array
+    {
+        return match ($period) {
+            'daily' => [$fromDate->copy()->startOfDay(), $toDate->copy()->endOfDay()],
+            'weekly' => [$fromDate->copy()->startOfWeek(), $toDate->copy()->endOfWeek()],
+            default => [$fromDate->copy()->startOfMonth(), $toDate->copy()->endOfMonth()],
+        };
+    }
+
     /** Calculates from date with the given period to reach the target date
      * @param Carbon $toDate
      * @param string|null $period
@@ -186,6 +200,7 @@ class Dashboard
         /* TODO: check if select is aliased value */
 
         if ($dateField != null) {
+            $query->whereBetween($dateField, self::periodBounds($fromDate, $toDate, $period));
             self::addDateToQuery($query, $dateField, 'date', $period);
         }
 
